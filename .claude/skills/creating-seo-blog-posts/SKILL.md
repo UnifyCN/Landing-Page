@@ -31,6 +31,7 @@ Blog content lives in Sanity (project `j4gu2dbr`, dataset `production`), rendere
 | `slug` | Lowercase, hyphenated, keyword-first, concise. **Do not rename after publishing** - a renamed slug bleeds ranking equity; if you must, add the old slug to `LEGACY_SLUG_REDIRECTS` in `blog/[slug].astro`. |
 | `seoTitle` | The `<title>` tag. Keyword-first, <=60 chars. |
 | `description` | **Required.** Answer-first, 140-160 chars. Used as the meta description and as the fallback for `seoDescription`. Always include it in the JSON. |
+| `category` | **Required.** ONE value from `src/lib/blog-categories.js`: `jobs-careers`, `housing-renting`, `immigration-status`, `banking-money`, `healthcare`, `taxes-benefits`, `driving-transportation`, `credentials`, `international-students`, `others`. Drives the `/blog` filter chips and the card label. Audience wins the tie-break: a post written for international students is `international-students` even if it is about banking or jobs. |
 | `seoDescription` | Optional. Overrides `description` for the meta when you want a different SERP line. |
 | `keyTakeaway` | Answer-first summary, 40-60 words (renders as a callout; prime for snippets/AI). |
 | `faqs[]` | 3-4 `{question, answer}` pairs (renders a visible FAQ + FAQPage JSON-LD). |
@@ -52,6 +53,7 @@ AEO wins that get cited by AI: open with the answer, use stats with sources, com
   "title": "Best Bank for Newcomers in Canada: How to Choose",
   "seoTitle": "Best Bank for Newcomers in Canada (2026)",
   "description": "Answer-first meta, 140-160 chars, names the reason to click.",
+  "category": "banking-money",
   "keyTakeaway": "Answer-first 40-60 word summary that opens the post.",
   "craReference": "",
   "order": 0,
@@ -102,6 +104,7 @@ SANITY_WRITE_TOKEN="$(tr -d '[:space:]' < /tmp/stok)" node scripts/create-post.m
 - Renaming a slug after publish without a redirect (bleeds equity).
 - Reusing a `publishedAt` timestamp (ambiguous featured slot).
 - Omitting `description` from the JSON - it is the required field (`seoDescription` is only an optional override).
+- Omitting `category` or inventing a value - `create-post.mjs` refuses to commit; use one of the listed values.
 
 ## Reference
 
