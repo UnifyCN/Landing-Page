@@ -1,3 +1,7 @@
+import type { BlogCategory } from '../blog-categories.js'
+
+export type { BlogCategory }
+
 export interface SanityImageRef {
   _type: 'image'
   asset: { _ref: string; _type: 'reference' }
@@ -10,6 +14,8 @@ export interface SanityPostStub {
   description: string
   publishedAt: string
   thumbnail: SanityImageRef
+  /** Absent on posts that predate the field - normalise with `toBlogCategory()`. */
+  category?: BlogCategory
 }
 
 export interface SanityFaq {

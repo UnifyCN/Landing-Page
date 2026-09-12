@@ -4,10 +4,25 @@ import PostCard from "../../components/blog/PostCard.astro";
 import CTABand from "../../components/sections/CTABand.astro";
 import { getAllPosts } from "../../lib/sanity/queries";
 import { urlFor } from "../../lib/sanity/client";
+import {
+  BLOG_CATEGORIES,
+  blogCategoryLabel,
+  isBlogCategory,
+  toBlogCategory,
+} from "../../lib/blog-categories.js";
 
 const posts = await getAllPosts();
 const featured = posts[0] ?? null;
 const rest = posts.slice(1);
+
+// `/blog?category=<value>` renders pre-filtered (the post page links here, and
+// the chips write the param back so a filter is shareable). Unknown values are
+// ignored. The canonical stays `/blog` (BaseLayout uses the pathname), so the
+// variants never compete in search.
+const requested = Astro.url.searchParams.get("category");
+const activeCategory = isBlogCategory(requested) ? requested : "all";
+const isShown = (category: string) => activeCategory === "all" || activeCategory === category;
+const featuredCategory = featured ? toBlogCategory(featured.category) : null;
 
 const featuredDate = featured
   ? new Date(featured.publishedAt).toLocaleDateString("en-CA", {
@@ -47,9 +62,27 @@ const featuredDate = featured
         </div>
       ) : (
         <>
+          <!-- Filter chips -->
+          <div class="bl-filters" id="bl-filters" role="tablist" aria-label="Filter posts by category">
+            <button
+              class:list={["bl-filter-btn", { "bl-filter-active": activeCategory === "all" }]}
+              data-filter="all"
+              role="tab"
+              aria-selected={activeCategory === "all" ? "true" : "false"}
+            >All</button>
+            {BLOG_CATEGORIES.map((cat) => (
+              <button
+                class:list={["bl-filter-btn", { "bl-filter-active": activeCategory === cat.value }]}
+                data-filter={cat.value}
+                role="tab"
+                aria-selected={activeCategory === cat.value ? "true" : "false"}
+              >{cat.label}</button>
+            ))}
+          </div>
+
           <!-- Featured post -->
-          {featured && (
-            <div class="bl-featured-wrap">
+          {featured && featuredCategory && (
+            <div class="bl-featured-wrap" data-category={featuredCategory} hidden={!isShown(featuredCategory)}>
               <a href={`/blog/${featured.slug.current}`} class="bl-featured">
                 <div class="bl-featured-img-wrap">
                   <img
@@ -61,7 +94,11 @@ const featuredDate = featured
                 </div>
                 <div class="bl-featured-body">
                   <p class="bl-featured-eyebrow">Latest</p>
-                  <p class="bl-featured-date">{featuredDate}</p>
+                  <p class="bl-featured-meta">
+                    <span class="bl-featured-cat">{blogCategoryLabel(featuredCategory)}</span>
+                    <span class="bl-featured-meta-dot" aria-hidden="true">·</span>
+                    <time class="bl-featured-date" datetime={featured.publishedAt}>{featuredDate}</time>
+                  </p>
                   <h2 class="bl-featured-title">{featured.title}</h2>
                   <p class="bl-featured-desc">{featured.description}</p>
                   <span class="bl-featured-cta">
@@ -78,17 +115,26 @@ const featuredDate = featured
           <!-- Remaining posts grid -->
           {rest.length > 0 && (
             <div class="blog-grid" id="blog-grid">
-              {rest.map((post, i) => (
-                <PostCard
-                  title={post.title}
-                  publishedAt={new Date(post.publishedAt)}
-                  thumbnail={urlFor(post.thumbnail).width(600).url()}
-                  slug={post.slug.current}
-                  index={i}
-                />
-              ))}
+              {rest.map((post, i) => {
+                const category = toBlogCategory(post.category);
+                return (
+                  <PostCard
+                    title={post.title}
+                    publishedAt={new Date(post.publishedAt)}
+                    thumbnail={urlFor(post.thumbnail).width(600).url()}
+                    slug={post.slug.current}
+                    category={category}
+                    categoryLabel={blogCategoryLabel(category)}
+                    index={i}
+                    hidden={!isShown(category)}
+                  />
+                );
+              })}
             </div>
           )}
+
+          <!-- Empty state (a chip with no posts yet) -->
+          <p class="bl-filter-empty" id="bl-filter-empty" hidden>No posts in this category yet — check back soon.</p>
         </>
       )}
     </section>
@@ -188,6 +234,56 @@ const featuredDate = featured
     overflow: hidden;
   }
 
+  /* ── Filter chips (mirrors .rv-filters on /resources) ── */
+  .bl-filters {
+    max-width: 1200px;
+    margin: 0 auto 3rem;
+    padding: 0 1.5rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .bl-filter-btn {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 0.8125rem;
+    letter-spacing: 0.02em;
+    padding: 0.5rem 1.125rem;
+    border-radius: 99px;
+    border: none;
+    cursor: pointer;
+    background: rgba(23, 22, 22, 0.07);
+    color: var(--color-muted);
+    transition: background 0.18s ease, color 0.18s ease;
+    white-space: nowrap;
+  }
+
+  .bl-filter-btn:hover {
+    background: rgba(23, 22, 22, 0.12);
+    color: var(--color-text);
+  }
+
+  .bl-filter-btn:focus-visible {
+    outline: 2px solid var(--color-brand-red);
+    outline-offset: 2px;
+  }
+
+  .bl-filter-btn.bl-filter-active {
+    background: var(--color-brand-red);
+    color: #fff;
+  }
+
+  .bl-filter-empty {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 4rem 1.5rem;
+    text-align: center;
+    font-family: var(--font-display);
+    font-size: 1rem;
+    color: var(--color-muted);
+  }
+
   /* ── Featured ── */
   .bl-featured-wrap {
     max-width: 1200px;
@@ -232,11 +328,24 @@ const featuredDate = featured
     margin: 0 0 0.5rem;
   }
 
-  .bl-featured-date {
+  .bl-featured-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.5rem;
     font-family: var(--font-display);
     font-size: 0.875rem;
     color: var(--color-muted);
     margin: 0 0 0.75rem;
+  }
+
+  .bl-featured-cat {
+    font-weight: 600;
+    color: var(--color-ink);
+  }
+
+  .bl-featured-meta-dot {
+    opacity: 0.5;
   }
 
   .bl-featured-title {
@@ -291,10 +400,29 @@ const featuredDate = featured
     gap: 2.5rem 2rem;
   }
 
+  /* ── Phones: 11 chips would stack 5 deep, so they scroll in one row instead ── */
+  @media (max-width: 639px) {
+    .bl-filters {
+      flex-wrap: nowrap;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+      padding-bottom: 4px;
+      margin-bottom: 2.5rem;
+    }
+
+    .bl-filters::-webkit-scrollbar { display: none; }
+  }
+
   /* ── Tablet ── */
   @media (min-width: 810px) {
     .bl-hero-inner {
       padding: 0 3rem;
+    }
+
+    .bl-filters {
+      padding: 0 3rem;
+      margin-bottom: 3.5rem;
     }
 
     .bl-featured-wrap {
@@ -332,6 +460,10 @@ const featuredDate = featured
       padding: calc(67px + 6rem) 0 6.5rem;
     }
 
+    .bl-filters {
+      padding: 0 5rem;
+    }
+
     .bl-featured-wrap {
       padding: 0 5rem;
     }
@@ -345,18 +477,81 @@ const featuredDate = featured
 </style>
 
 <script>
-  const grid = document.getElementById("blog-grid");
-  if (grid) {
-    grid.classList.add("animate");
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          grid.classList.add("visible");
-          observer.disconnect();
-        }
-      },
-      { threshold: 0.05 }
+  // Both features bind to the page DOM, so they run on every `astro:page-load`
+  // (View Transitions only execute module scripts once) with a data-attribute
+  // guard against double-binding on the initial load.
+  function initBlogIndex() {
+    const grid = document.getElementById("blog-grid");
+    if (grid && grid.dataset.revealBound !== "true") {
+      grid.dataset.revealBound = "true";
+      grid.classList.add("animate");
+      const observer = new IntersectionObserver(
+        ([entry]) => {
+          if (entry.isIntersecting) {
+            grid.classList.add("visible");
+            observer.disconnect();
+          }
+        },
+        { threshold: 0.05 }
+      );
+      observer.observe(grid);
+    }
+
+    const filters = document.getElementById("bl-filters");
+    if (!filters || filters.dataset.bfBound === "true") return;
+    filters.dataset.bfBound = "true";
+
+    const buttons = Array.from(filters.querySelectorAll<HTMLButtonElement>(".bl-filter-btn"));
+    const items = Array.from(
+      document.querySelectorAll<HTMLElement>(".bl-grid-section [data-category]")
     );
-    observer.observe(grid);
+    const empty = document.getElementById("bl-filter-empty");
+
+    // On phones the chips scroll in one row; keep the active chip in view.
+    const revealActiveChip = () => {
+      if (filters.scrollWidth <= filters.clientWidth) return;
+      const active = filters.querySelector<HTMLElement>(".bl-filter-active");
+      if (!active) return;
+      const row = filters.getBoundingClientRect();
+      const chip = active.getBoundingClientRect();
+      const pad = 24;
+      if (chip.left < row.left + pad) filters.scrollLeft += chip.left - row.left - pad;
+      else if (chip.right > row.right - pad) filters.scrollLeft += chip.right - row.right + pad;
+    };
+
+    const apply = (filter: string) => {
+      buttons.forEach((b) => {
+        const active = b.dataset.filter === filter;
+        b.classList.toggle("bl-filter-active", active);
+        b.setAttribute("aria-selected", active ? "true" : "false");
+      });
+      revealActiveChip();
+
+      let visible = 0;
+      items.forEach((el) => {
+        const match = filter === "all" || el.dataset.category === filter;
+        el.hidden = !match;
+        if (match) visible++;
+      });
+      if (empty) empty.hidden = visible > 0;
+
+      // Keep the URL in sync so a filtered view can be shared / bookmarked.
+      const url = new URL(window.location.href);
+      if (filter === "all") url.searchParams.delete("category");
+      else url.searchParams.set("category", filter);
+      history.replaceState(history.state, "", url);
+    };
+
+    buttons.forEach((btn) => {
+      btn.addEventListener("click", () => apply(btn.dataset.filter ?? "all"));
+    });
+
+    // The server already rendered the state for `?category=`; only the empty
+    // message (it depends on the live count) and the chip scroll need computing.
+    if (empty) empty.hidden = items.some((el) => !el.hidden);
+    revealActiveChip();
   }
+
+  initBlogIndex();
+  document.addEventListener("astro:page-load", initBlogIndex);
 </script>
