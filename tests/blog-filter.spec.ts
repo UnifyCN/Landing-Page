@@ -11,16 +11,22 @@ test.describe("blog category filter", () => {
 
     const filters = page.locator("#bl-filters");
     await expect(filters).toHaveAttribute("data-bf-bound", "true");
-    await expect(filters.locator('[data-filter="others"]')).toHaveAttribute("aria-selected", "true");
-    await expect(filters.locator('[data-filter="all"]')).toHaveAttribute("aria-selected", "false");
+    await expect(filters.locator('[data-filter="others"]')).toHaveAttribute("aria-pressed", "true");
+    await expect(filters.locator('[data-filter="all"]')).toHaveAttribute("aria-pressed", "false");
     await expect(
       page.locator('.bl-grid-section [data-category]:not([hidden]):not([data-category="others"])'),
     ).toHaveCount(0);
+    // Positive check: either a matching post or the empty state is on screen.
+    await expect(
+      page
+        .locator('.bl-grid-section [data-category="others"]:not([hidden]), #bl-filter-empty:not([hidden])')
+        .first(),
+    ).toBeVisible();
   });
 
   test("an unknown ?category= falls back to All", async ({ page }) => {
     await page.goto("/blog?category=not-a-category");
-    await expect(page.locator('#bl-filters [data-filter="all"]')).toHaveAttribute("aria-selected", "true");
+    await expect(page.locator('#bl-filters [data-filter="all"]')).toHaveAttribute("aria-pressed", "true");
     await expect(page.locator(".bl-grid-section [data-category][hidden]")).toHaveCount(0);
   });
 

@@ -116,7 +116,11 @@ for (const v of Object.values(MAP)) counts[v]++;
 console.log(`\nMapped ${Object.keys(MAP).length} slugs; ${published.length} published posts live.\n`);
 for (const c of BLOG_CATEGORIES) console.log(`  ${String(counts[c.value]).padStart(3)}  ${c.label}`);
 
-const todo = published.filter((d) => MAP[d.slug] && d.category !== MAP[d.slug]);
+// A slug needs work when the published doc OR its open draft disagrees with MAP
+// (a draft can drift after the published doc was patched). Each document is
+// still only patched when its own value differs.
+const needsPatch = (doc) => Boolean(doc) && doc.category !== MAP[doc.slug];
+const todo = published.filter((d) => MAP[d.slug] && (needsPatch(d) || needsPatch(drafts.get(d.slug))));
 console.log(`\n${todo.length} post(s) need a patch (${published.length - todo.length} already correct).`);
 if (missing.length) console.warn(`\nWARN ${missing.length} published post(s) not in MAP (left untouched):\n  - ${missing.join('\n  - ')}`);
 if (stale.length) console.warn(`\nWARN ${stale.length} MAP slug(s) not found in Sanity:\n  - ${stale.join('\n  - ')}`);
@@ -134,11 +138,13 @@ if (!TOKEN) {
 let ok = 0;
 for (const doc of todo) {
   const category = MAP[doc.slug];
-  const tx = client.transaction().patch(doc._id, (p) => p.set({ category }));
+  const tx = client.transaction();
+  if (needsPatch(doc)) tx.patch(doc._id, (p) => p.set({ category }));
   const draft = drafts.get(doc.slug);
-  if (draft && draft.category !== category) tx.patch(draft._id, (p) => p.set({ category }));
+  const patchDraft = needsPatch(draft);
+  if (patchDraft) tx.patch(draft._id, (p) => p.set({ category }));
   await tx.commit();
-  console.log(`set ${category.padEnd(22)} ${doc.slug}${draft ? '  (+draft)' : ''}`);
+  console.log(`set ${category.padEnd(22)} ${doc.slug}${patchDraft ? '  (+draft)' : ''}`);
   ok++;
 }
 console.log(`\nDone. Patched ${ok}/${todo.length} posts.`);

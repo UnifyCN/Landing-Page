@@ -31,7 +31,7 @@ export default defineConfig({
     ...config,
     server: {
       ...config.server,
-      fs: {...config.server?.fs, allow: [...(config.server?.fs?.allow ?? []), '..']},
+      fs: {...config.server?.fs, allow: [...(config.server?.fs?.allow ?? []), '../src/lib']},
     },
   }),
 })

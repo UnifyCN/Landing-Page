@@ -63,19 +63,17 @@ const featuredDate = featured
       ) : (
         <>
           <!-- Filter chips -->
-          <div class="bl-filters" id="bl-filters" role="tablist" aria-label="Filter posts by category">
+          <div class="bl-filters" id="bl-filters" role="group" aria-label="Filter posts by category">
             <button
               class:list={["bl-filter-btn", { "bl-filter-active": activeCategory === "all" }]}
               data-filter="all"
-              role="tab"
-              aria-selected={activeCategory === "all" ? "true" : "false"}
+              aria-pressed={activeCategory === "all" ? "true" : "false"}
             >All</button>
             {BLOG_CATEGORIES.map((cat) => (
               <button
                 class:list={["bl-filter-btn", { "bl-filter-active": activeCategory === cat.value }]}
                 data-filter={cat.value}
-                role="tab"
-                aria-selected={activeCategory === cat.value ? "true" : "false"}
+                aria-pressed={activeCategory === cat.value ? "true" : "false"}
               >{cat.label}</button>
             ))}
           </div>
@@ -523,7 +521,7 @@ const featuredDate = featured
       buttons.forEach((b) => {
         const active = b.dataset.filter === filter;
         b.classList.toggle("bl-filter-active", active);
-        b.setAttribute("aria-selected", active ? "true" : "false");
+        b.setAttribute("aria-pressed", active ? "true" : "false");
       });
       revealActiveChip();
 

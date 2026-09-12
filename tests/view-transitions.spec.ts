@@ -64,11 +64,17 @@ test.describe("island re-binding after View Transition navigation", () => {
 
     const chip = filters.locator('[data-filter="healthcare"]');
     await chip.click();
-    await expect(chip).toHaveAttribute("aria-selected", "true");
+    await expect(chip).toHaveAttribute("aria-pressed", "true");
     await expect(page).toHaveURL(/\/blog\?category=healthcare$/);
     await expect(
       page.locator('.bl-grid-section [data-category]:not([hidden]):not([data-category="healthcare"])'),
     ).toHaveCount(0);
+    // Positive check: either a matching post or the empty state is on screen.
+    await expect(
+      page
+        .locator('.bl-grid-section [data-category="healthcare"]:not([hidden]), #bl-filter-empty:not([hidden])')
+        .first(),
+    ).toBeVisible();
   });
 
   test("resources category filter re-binds after Home → Resources", async ({ page }) => {
