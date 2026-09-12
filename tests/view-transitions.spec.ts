@@ -53,4 +53,36 @@ test.describe("island re-binding after View Transition navigation", () => {
       "true",
     );
   });
+
+  test("blog category filter re-binds after Home → Blog", async ({ page }) => {
+    await page.goto("/");
+    await page.locator("a.nav-link", { hasText: "Blog" }).click();
+    await expect(page).toHaveURL(/\/blog$/);
+
+    const filters = page.locator("#bl-filters");
+    await expect(filters).toHaveAttribute("data-bf-bound", "true");
+
+    const chip = filters.locator('[data-filter="healthcare"]');
+    await chip.click();
+    await expect(chip).toHaveAttribute("aria-selected", "true");
+    await expect(page).toHaveURL(/\/blog\?category=healthcare$/);
+    await expect(
+      page.locator('.bl-grid-section [data-category]:not([hidden]):not([data-category="healthcare"])'),
+    ).toHaveCount(0);
+  });
+
+  test("resources category filter re-binds after Home → Resources", async ({ page }) => {
+    await page.goto("/");
+    await page.locator("a.nav-link", { hasText: "Resources" }).click();
+    await expect(page).toHaveURL(/\/resources$/);
+
+    const filters = page.locator(".rv-filters");
+    await expect(filters).toHaveAttribute("data-rv-bound", "true");
+
+    const chip = filters.locator('[data-filter="finance"]');
+    await chip.click();
+    await expect(chip).toHaveAttribute("aria-selected", "true");
+    await expect(page.locator('.rv-card:not([hidden]):not([data-category="finance"])')).toHaveCount(0);
+    await expect(page.locator('.rv-card[data-category="finance"]:not([hidden])').first()).toBeVisible();
+  });
 });
