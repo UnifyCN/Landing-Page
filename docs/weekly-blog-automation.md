@@ -30,8 +30,9 @@ Credentials arrive as environment variables (already set on the routine):
 
 4. **Write the post JSON** to `/tmp/<slug>.json` in the shape documented in the skill,
    hitting the field targets: `title`, `seoTitle` (<=60 chars), `description` (140-160),
-   `keyTakeaway` (40-60 words), 3-4 `faqs`, H2 `body` with short paragraphs, bullets, and a
-   comparison table where useful. Ground every factual claim in a primary source
+   `category` (ONE value from `src/lib/blog-categories.js`; audience wins the tie-break, so a
+   post for international students is `international-students`), `keyTakeaway` (40-60 words),
+   3-4 `faqs`, H2 `body` with short paragraphs, bullets, and a comparison table where useful. Ground every factual claim in a primary source
    (canada.ca / CRA / IRCC / reputable survey) and name the source in-copy. No em dashes.
    Set `"thumbnail": "/tmp/<slug>-thumb.png"` (generated next).
 
@@ -54,7 +55,7 @@ Credentials arrive as environment variables (already set on the routine):
    c. Composite the chosen photo (the overlay keeps text readable over any image):
       ```bash
       THUMB_BG="/tmp/pexels/cand-<N>.jpg" \
-      THUMB_EYEBROW="<short category, e.g. Newcomer Money Guide>" \
+      THUMB_EYEBROW="<the category label, e.g. Banking & money>" \
       THUMB_HEADLINE=$'<Line one>\n<Line two>' \
       THUMB_OUT="/tmp/<slug>-thumb.png" \
       node scripts/generate-post-thumbnail.mjs

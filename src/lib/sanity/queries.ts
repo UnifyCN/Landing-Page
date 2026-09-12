@@ -1,7 +1,7 @@
 import { sanityClient } from './client'
 import type { SanityPost, SanityPostStub } from './types'
 
-const stub = `_id, title, slug, description, publishedAt, thumbnail`
+const stub = `_id, title, slug, description, publishedAt, thumbnail, category`
 
 export const getAllPosts = (): Promise<SanityPostStub[]> =>
   sanityClient.fetch(`*[_type == "post"] | order(publishedAt desc) { ${stub} }`)

@@ -1,4 +1,5 @@
 import { defineField, defineType } from 'sanity'
+import { BLOG_CATEGORIES } from '../../src/lib/blog-categories.js'
 
 export default defineType({
   name: 'post',
@@ -8,6 +9,18 @@ export default defineType({
     defineField({ name: 'title', title: 'Title', type: 'string', validation: (R) => R.required() }),
     defineField({ name: 'slug', title: 'Slug', type: 'slug', options: { source: 'title' }, validation: (R) => R.required() }),
     defineField({ name: 'description', title: 'Description', type: 'text', rows: 3, validation: (R) => R.required() }),
+    defineField({
+      name: 'category',
+      title: 'Category',
+      type: 'string',
+      description:
+        'Drives the filter chips on /blog and the label on the card. Pick the ONE best fit. Audience wins the tie-break: a post written for international students goes under "International students" even if it is about banking or jobs.',
+      options: {
+        list: BLOG_CATEGORIES.map((c) => ({ title: c.label, value: c.value })),
+        layout: 'dropdown',
+      },
+      validation: (R) => R.required(),
+    }),
     defineField({
       name: 'seoTitle',
       title: 'SEO Title',
@@ -81,9 +94,10 @@ export default defineType({
     }),
   ],
   preview: {
-    select: { title: 'title', order: 'order', media: 'thumbnail' },
-    prepare({ title, order, media }: any) {
-      return { title, subtitle: `Order: ${order}`, media }
+    select: { title: 'title', category: 'category', media: 'thumbnail' },
+    prepare({ title, category, media }: any) {
+      const label = BLOG_CATEGORIES.find((c) => c.value === category)?.label
+      return { title, subtitle: label ?? 'No category', media }
     },
   },
 })

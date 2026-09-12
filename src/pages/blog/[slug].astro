@@ -6,6 +6,7 @@ import { getAllPosts, getPostBySlug } from "../../lib/sanity/queries";
 import { urlFor } from "../../lib/sanity/client";
 import { toHTML } from "@portabletext/to-html";
 import { blogPostingLd, breadcrumbLd, faqLd, serializeLd } from "../../lib/seo";
+import { blogCategoryLabel, toBlogCategory } from "../../lib/blog-categories.js";
 import "../../styles/prose.css";
 
 // Legacy slugs that were renamed. These URLs accumulated ranking equity in Google
@@ -92,6 +93,7 @@ const updatedDate = new Date(post.updatedAt ?? post.publishedAt).toLocaleDateStr
 });
 
 const bodyHtml = toHTML(post.body, toHTMLOptions);
+const category = toBlogCategory(post.category);
 
 const canonicalUrl = new URL(Astro.url.pathname, Astro.site).href;
 const thumbnailUrl = urlFor(post.thumbnail).width(1200).height(630).url();   // 1200x630 for JSON-LD/OG ratio
@@ -158,6 +160,8 @@ const faqLdStr = post.faqs?.length
     <!-- ── Metadata ── -->
     <div class="post-meta">
       <span>Last updated: <strong>{updatedDate}</strong></span>
+      <span class="post-meta-sep" aria-hidden="true">|</span>
+      <a href={`/blog?category=${category}`} class="post-meta-cat">{blogCategoryLabel(category)}</a>
       {post.craReference && (
         <>
           <span class="post-meta-sep" aria-hidden="true">|</span>
@@ -346,6 +350,18 @@ const faqLdStr = post.faqs?.length
 
   .post-meta-ref {
     color: var(--color-brand-red);
+  }
+
+  .post-meta-cat {
+    color: var(--color-brand-red);
+    font-weight: 600;
+    text-decoration: none;
+    border-bottom: 1px solid transparent;
+    transition: border-color 0.2s ease;
+  }
+
+  .post-meta-cat:hover {
+    border-bottom-color: currentColor;
   }
 
   /* ── Prose ── */

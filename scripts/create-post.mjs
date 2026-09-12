@@ -13,6 +13,7 @@
 //   "title": "Full editorial H1",
 //   "seoTitle": "Keyword-first <=60 chars",
 //   "description": "Answer-first 140-160 chars",          // used for both meta + seoDescription if seoDescription omitted
+//   "category": "banking-money",                          // REQUIRED, one value from src/lib/blog-categories.js
 //   "seoDescription": "(optional) overrides description in the <title>/meta",
 //   "keyTakeaway": "Answer-first 40-60 word summary",
 //   "craReference": "(optional) e.g. T1 General, NR74",
@@ -26,6 +27,7 @@
 
 import { createClient } from '@sanity/client';
 import { readFileSync } from 'node:fs';
+import { BLOG_CATEGORIES, isBlogCategory } from '../src/lib/blog-categories.js';
 
 const args = process.argv.slice(2);
 const jsonPath = args.find((a) => !a.startsWith('--'));
@@ -67,6 +69,10 @@ function lengthWarnings() {
   }
   if (!post.thumbnail) w.push('no thumbnail (REQUIRED to publish)');
   for (const f of ['slug', 'title', 'description', 'body']) if (!post[f]) w.push(`missing required field: ${f}`);
+  if (!post.category) w.push('missing required field: category');
+  else if (!isBlogCategory(post.category)) {
+    w.push(`missing required field: category ("${post.category}" is not one of ${BLOG_CATEGORIES.map((c) => c.value).join(', ')})`);
+  }
   return w;
 }
 
@@ -76,6 +82,7 @@ function summary() {
   console.log(`  slug:        ${post.slug}  ->  _id ${PUBLISH ? post.slug : 'drafts.' + post.slug}`);
   console.log(`  seoTitle:    ${(post.seoTitle || '(falls back to title)')} (${(post.seoTitle || '').length} chars)`);
   console.log(`  description: ${(post.seoDescription || post.description || '').length} chars`);
+  console.log(`  category:    ${post.category || '(none)'}`);
   if (post.keyTakeaway) console.log(`  keyTakeaway: ${post.keyTakeaway.trim().split(/\s+/).length} words`);
   console.log(`  body:        ${(post.body || []).length} items (${(post.body || []).filter((b) => b.h2 != null).length} H2)`);
   console.log(`  faqs:        ${(post.faqs || []).length}`);
@@ -114,6 +121,7 @@ async function commit() {
     description: post.description,
     seoTitle: post.seoTitle,
     seoDescription: post.seoDescription || post.description,
+    category: post.category,
     keyTakeaway: post.keyTakeaway,
     ...(post.craReference ? { craReference: post.craReference } : {}),
     publishedAt,

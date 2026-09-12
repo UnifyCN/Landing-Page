@@ -440,31 +440,43 @@ const categories: ResourceCategory[] = [
 </style>
 
 <script>
-  const filterBtns = document.querySelectorAll<HTMLButtonElement>(".rv-filter-btn");
-  const cards = document.querySelectorAll<HTMLElement>(".rv-card");
-  const emptyState = document.getElementById("rv-empty");
+  // Binds to the page DOM, so it must run on every `astro:page-load` (module
+  // scripts only execute once under View Transitions) with a guard against
+  // double-binding on the initial load.
+  function initResourceFilters() {
+    const filters = document.querySelector<HTMLElement>(".rv-filters");
+    if (!filters || filters.dataset.rvBound === "true") return;
+    filters.dataset.rvBound = "true";
 
-  filterBtns.forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const filter = btn.dataset.filter ?? "all";
+    const filterBtns = filters.querySelectorAll<HTMLButtonElement>(".rv-filter-btn");
+    const cards = document.querySelectorAll<HTMLElement>(".rv-card");
+    const emptyState = document.getElementById("rv-empty");
 
-      // Update active button
-      filterBtns.forEach((b) => {
-        b.classList.remove("rv-filter-active");
-        b.setAttribute("aria-selected", "false");
+    filterBtns.forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const filter = btn.dataset.filter ?? "all";
+
+        // Update active button
+        filterBtns.forEach((b) => {
+          b.classList.remove("rv-filter-active");
+          b.setAttribute("aria-selected", "false");
+        });
+        btn.classList.add("rv-filter-active");
+        btn.setAttribute("aria-selected", "true");
+
+        // Show/hide cards
+        let visible = 0;
+        cards.forEach((card) => {
+          const match = filter === "all" || card.dataset.category === filter;
+          card.hidden = !match;
+          if (match) visible++;
+        });
+
+        if (emptyState) emptyState.hidden = visible > 0;
       });
-      btn.classList.add("rv-filter-active");
-      btn.setAttribute("aria-selected", "true");
-
-      // Show/hide cards
-      let visible = 0;
-      cards.forEach((card) => {
-        const match = filter === "all" || card.dataset.category === filter;
-        card.hidden = !match;
-        if (match) visible++;
-      });
-
-      if (emptyState) emptyState.hidden = visible > 0;
     });
-  });
+  }
+
+  initResourceFilters();
+  document.addEventListener("astro:page-load", initResourceFilters);
 </script>

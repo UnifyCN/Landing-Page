@@ -23,4 +23,15 @@ export default defineConfig({
   schema: {
     types: schemaTypes,
   },
+
+  // The post schema imports the shared category list from ../src/lib (outside
+  // the Studio root). Vite's dev server refuses files outside the root unless
+  // they are allow-listed; `sanity build` / `sanity deploy` are unaffected.
+  vite: (config) => ({
+    ...config,
+    server: {
+      ...config.server,
+      fs: {...config.server?.fs, allow: [...(config.server?.fs?.allow ?? []), '../src/lib']},
+    },
+  }),
 })
