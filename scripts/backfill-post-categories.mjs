@@ -7,6 +7,8 @@
 // Usage:
 //   node scripts/backfill-post-categories.mjs             # dry run: validates the map, prints a summary
 //   SANITY_WRITE_TOKEN=sk... node scripts/backfill-post-categories.mjs --commit
+//   # or with the logged-in Sanity CLI user (no token to mint):
+//   cd studio && npx sanity exec ../scripts/backfill-post-categories.mjs --with-user-token -- --commit
 //
 // Idempotent: only patches posts whose stored category differs. Also patches an
 // open draft of the same post so a later publish does not wipe the value.
@@ -80,12 +82,14 @@ const MAP = {
 };
 
 const COMMIT = process.argv.includes('--commit');
+// SANITY_AUTH_TOKEN is what `sanity exec --with-user-token` injects.
+const TOKEN = process.env.SANITY_WRITE_TOKEN || process.env.SANITY_AUTH_TOKEN;
 
 const client = createClient({
   projectId: 'j4gu2dbr',
   dataset: 'production',
   apiVersion: '2024-01-01',
-  token: process.env.SANITY_WRITE_TOKEN,
+  token: TOKEN,
   useCdn: false,
 });
 
@@ -123,8 +127,8 @@ if (!COMMIT) {
 }
 
 // ---- commit ----
-if (!process.env.SANITY_WRITE_TOKEN) {
-  console.error('ERROR: set SANITY_WRITE_TOKEN to commit.');
+if (!TOKEN) {
+  console.error('ERROR: set SANITY_WRITE_TOKEN (or run via `sanity exec --with-user-token`) to commit.');
   process.exit(1);
 }
 let ok = 0;
